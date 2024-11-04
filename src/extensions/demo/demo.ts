@@ -1,7 +1,6 @@
 import html from "@distui/demo/main/index.html?raw";
 
-import { GlobalThis, MouseEvent, Layer } from "@/shared/reearthTypes";
-
+import { GlobalThis, Layer } from "@/shared/reearthTypes";
 
 const reearth = (globalThis as unknown as GlobalThis).reearth;
 reearth.ui.show(html);
@@ -12,46 +11,39 @@ reearth.ui.show(html);
 // We need to add a data transformer to hold the initial message
 // Please check ./main/index.html for more details
 
-
 // フォルダとデータ名を取得してプラグイン側に送信する関数
-function sendLayerData(): void {
-  const layers: Layer[] = reearth.layers.layers;
-
-  // フォルダとその子データ（レイヤー）を抽出して構造化する
-  const layerData = layers.map(layer => {
+function sendLayerData() {
+  const processLayer = (layer: Layer) => {
+    const l = {
+      id: layer.id,
+      extensionId: layer.extensionId,
+      title: layer.title,
+      isVisible: layer.isVisible,
+      tags: layer.tags,
+    };
     if (layer.children) {
-      // フォルダの場合、その子レイヤーを含めてオブジェクトを作成
-      return {
-        folderName: layer.title || "Unnamed Folder",  // フォルダ名
-        children: layer.children.map(child => ({
-          dataName: child.title || "Unnamed Data", // データ名
-          id: child.id,  // データのID
-          visible: child.isVisible // 可視状態
-        }))
-      };
-    } else {
-      // フォルダでない場合は、そのレイヤーを通常のデータとして返す
-      return {
-        folderName: null,  // フォルダではない
-        children: [{
-          dataName: layer.title || "Unnamed Data", // レイヤーの名前
-          id: layer.id,  // レイヤーのID
-          visible: layer.isVisible // 可視状態
-        }]
-      };
+      l.children = layer.children
+        .filter((l) => l.isVisible)
+        .map((cl) => processLayer(cl));
     }
-  });
-
-  // プラグインにフォルダとデータの構造を送信
+    return l;
+  };
   reearth.ui.postMessage({
-    type: "layerData",
-    data: layerData
+    action: "layersLayersTree",
+    widget: reearth.widget,
+    value: reearth.layers.layers
+      .filter((l) => l.isVisible)
+      .map((l) => processLayer(l)),
   });
-  console.log("hoge001")
-  // レイヤーデータを確認するためにJSON化して出力する
-  console.log("Layer Data:", JSON.stringify(layerData, null, 2));
-
-
+  console.log("出力確認");
+  // console.log(
+  //   JSON.stringify(
+  //     reearth.layers.layers
+  //       .filter((l) => l.isVisible)
+  //       .map((l) => processLayer(l)),
+  //     null,
+  //     2
+  //   )
+  // );
 }
 sendLayerData();
-
