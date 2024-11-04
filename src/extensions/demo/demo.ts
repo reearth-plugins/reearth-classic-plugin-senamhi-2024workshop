@@ -1,41 +1,49 @@
 import html from "@distui/demo/main/index.html?raw";
 
-import { GlobalThis, MouseEvent } from "@/shared/reearthTypes";
+import { GlobalThis, Layer } from "@/shared/reearthTypes";
 
 const reearth = (globalThis as unknown as GlobalThis).reearth;
 reearth.ui.show(html);
-
-// Demo of get message from UI
-reearth.on("message", (msg: { action: string; payload?: unknown }) => {
-  if (msg.action === "flyToTokyo") {
-    reearth.camera.flyTo(
-      {
-        lat: 35.68505398711427,
-        lng: 139.75584459383325,
-        height: 5000,
-      },
-      { duration: 1 }
-    );
-  }
-});
-
-const handleMouseMove = (e: MouseEvent) => {
-  // Demo of post message to UI
-  reearth.ui.postMessage({
-    action: "mouseMove",
-    payload: e,
-  });
-};
-reearth.on("mousemove", handleMouseMove);
 
 // Post message to UI when initialize
 // This is a little bit special since binding event listener on UI
 // by react usually is not ready at this moment.
 // We need to add a data transformer to hold the initial message
 // Please check ./main/index.html for more details
-reearth.ui.postMessage({
-  action: "__init__",
-  payload: {
-    primaryColor: reearth.widget?.property?.appearance?.primary_color,
-  },
-});
+
+// フォルダとデータ名を取得してプラグイン側に送信する関数
+function sendLayerData() {
+  const processLayer = (layer: Layer) => {
+    const l = {
+      id: layer.id,
+      extensionId: layer.extensionId,
+      title: layer.title,
+      isVisible: layer.isVisible,
+      tags: layer.tags,
+    };
+    if (layer.children) {
+      l.children = layer.children
+        .filter((l) => l.isVisible)
+        .map((cl) => processLayer(cl));
+    }
+    return l;
+  };
+  reearth.ui.postMessage({
+    action: "layersLayersTree",
+    widget: reearth.widget,
+    value: reearth.layers.layers
+      .filter((l) => l.isVisible)
+      .map((l) => processLayer(l)),
+  });
+  console.log("出力確認");
+  // console.log(
+  //   JSON.stringify(
+  //     reearth.layers.layers
+  //       .filter((l) => l.isVisible)
+  //       .map((l) => processLayer(l)),
+  //     null,
+  //     2
+  //   )
+  // );
+}
+sendLayerData();
