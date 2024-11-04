@@ -35,7 +35,7 @@ function sendLayerData() {
       .filter((l) => l.isVisible)
       .map((l) => processLayer(l)),
   });
-  console.log("出力確認");
+  console.log("send data to UI");
   // console.log(
   //   JSON.stringify(
   //     reearth.layers.layers
