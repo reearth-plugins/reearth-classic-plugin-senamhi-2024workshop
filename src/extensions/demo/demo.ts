@@ -11,16 +11,22 @@ reearth.ui.show(html);
 // We need to add a data transformer to hold the initial message
 // Please check ./main/index.html for more details
 
+type ProcessedLayer = Pick<
+  Layer,
+  "id" | "extensionId" | "title" | "isVisible" | "tags" | "children"
+>;
+
 // フォルダとデータ名を取得してプラグイン側に送信する関数
 function sendLayerData() {
   const processLayer = (layer: Layer) => {
-    const l = {
+    const l: ProcessedLayer = {
       id: layer.id,
       extensionId: layer.extensionId,
       title: layer.title,
       isVisible: layer.isVisible,
       tags: layer.tags,
     };
+
     if (layer.children) {
       l.children = layer.children
         .filter((l) => l.isVisible)
@@ -28,14 +34,19 @@ function sendLayerData() {
     }
     return l;
   };
+
+  const value = reearth.layers.layers
+    .filter((l) => l.isVisible)
+    .map((l) => processLayer(l));
+  console.log("value", value);
+
   reearth.ui.postMessage({
     action: "layersLayersTree",
-    widget: reearth.widget,
-    value: reearth.layers.layers
-      .filter((l) => l.isVisible)
-      .map((l) => processLayer(l)),
+    // widget: reearth.widget?.property
+    payload: value,
   });
-  console.log("send data to UI");
+
+  // console.log("send data to UI");
   // console.log(
   //   JSON.stringify(
   //     reearth.layers.layers
@@ -46,4 +57,11 @@ function sendLayerData() {
   //   )
   // );
 }
-sendLayerData();
+// sendLayerData();
+
+reearth.on("message", (msg) => {
+  console.log("Get message from UI", msg);
+  if (msg.action === "getLayersData") {
+    sendLayerData();
+  }
+});

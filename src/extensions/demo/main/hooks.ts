@@ -6,6 +6,8 @@ import {
   useState,
 } from "react";
 
+import { postMsg } from "@/shared/utils";
+
 export default () => {
   // const inited = useRef(false);
 
@@ -54,9 +56,13 @@ export default () => {
 
   useEffect(() => {
     console.log("Listener added");
-    window.addEventListener("message", e => {
-      console.log("Message received", e.origin);
+    window.addEventListener("message", (e) => {
+      console.log("Message received", e.data);
     });
+  }, []);
+
+  useEffect(() => {
+    postMsg("getLayersData");
   }, []);
 
   return {};
